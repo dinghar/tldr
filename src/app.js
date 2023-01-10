@@ -1,6 +1,7 @@
 const { App } = require("@slack/bolt");
 const { filterMessages, sortMessages } = require("./messageFilter");
 const { formatTranscript } = require("./transcriptFormatter");
+const { generateSummary } = require("./openaiClient");
 require("dotenv").config();
 
 // Initializes your app with your bot token and signing secret
@@ -11,8 +12,7 @@ const app = new App({
   appToken: process.env.SLACK_APP_TOKEN,
 });
 
-app.message("tldr", async ({ message, client, logger }) => {
-  console.log("-------------start--------------");
+app.message("tldr", async ({ message, client, say }) => {
   const history = await client.conversations.history({
     channel: message.channel,
   });
@@ -40,10 +40,62 @@ app.message("tldr", async ({ message, client, logger }) => {
 
   Promise.all(promises).then(() => {
     const transcript = formatTranscript(sortedMessages, identities);
-    console.log(transcript);
-    console.log("-------------end--------------");
+    generateSummary(transcript).then((summary) => {
+      client.chat.postEphemeral({
+        blocks: [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `Here's the tldr: ${summary}`,
+            },
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button",
+                text: {
+                  type: "plain_text",
+                  text: "Send to channel",
+                },
+                action_id: "send_summary_click",
+              },
+              {
+                type: "button",
+                text: {
+                  type: "plain_text",
+                  text: "Cancel",
+                },
+                action_id: "cancel_summary_click",
+              },
+            ],
+          },
+        ],
+        text: "Here's the tldr",
+        user: message.user,
+        channel: message.channel,
+      });
+    });
   });
 });
+
+app.action("send_summary_click", async ({ body, ack, say, client }) => {
+  await ack();
+  console.log(body);
+  console.log(body.container.message_ts);
+  console.log(body.container.channel_id);
+  client.chat.update({
+    ts: body.container.message_ts,
+    channel: body.container.channel_id,
+    reply_broadcast: true,
+  });
+});
+
+app.action(
+  "cancel_summary_click",
+  async ({ body, ack, say, payload, action, client }) => {}
+);
 
 (async () => {
   // Start your app

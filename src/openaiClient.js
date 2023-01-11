@@ -14,7 +14,7 @@ async function generateSummary(transcript) {
       model: "text-davinci-003",
       prompt: generatePrompt(transcript),
       temperature: 0.9,
-      max_tokens: 200,
+      max_tokens: 250,
     });
     return completion.data.choices[0].text;
   } catch (error) {

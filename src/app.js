@@ -2,6 +2,7 @@ const { App } = require("@slack/bolt");
 const { filterMessages, sortMessages } = require("./messageFilter");
 const { formatTranscript } = require("./transcriptFormatter");
 const { generateSummary } = require("./openaiClient");
+const { default: axios } = require("axios");
 require("dotenv").config();
 
 // Initializes your app with your bot token and signing secret
@@ -41,13 +42,14 @@ app.message("tldr", async ({ message, client, say }) => {
   Promise.all(promises).then(() => {
     const transcript = formatTranscript(sortedMessages, identities);
     generateSummary(transcript).then((summary) => {
+      const summaryText = `Here's the tldr:\n${summary}`;
       client.chat.postEphemeral({
         blocks: [
           {
             type: "section",
             text: {
               type: "mrkdwn",
-              text: `Here's the tldr: ${summary}`,
+              text: summaryText,
             },
           },
           {
@@ -59,6 +61,7 @@ app.message("tldr", async ({ message, client, say }) => {
                   type: "plain_text",
                   text: "Send to channel",
                 },
+                value: summaryText,
                 action_id: "send_summary_click",
               },
               {
@@ -72,7 +75,7 @@ app.message("tldr", async ({ message, client, say }) => {
             ],
           },
         ],
-        text: "Here's the tldr",
+        text: "Here's the tldr...",
         user: message.user,
         channel: message.channel,
       });
@@ -80,21 +83,22 @@ app.message("tldr", async ({ message, client, say }) => {
   });
 });
 
-app.action("send_summary_click", async ({ body, ack, say, client }) => {
+app.action("send_summary_click", async ({ body, action, ack, say, client }) => {
   await ack();
-  console.log(body);
-  console.log(body.container.message_ts);
-  console.log(body.container.channel_id);
-  client.chat.update({
-    ts: body.container.message_ts,
-    channel: body.container.channel_id,
-    reply_broadcast: true,
+  axios.post(body.response_url, {
+    delete_original: true,
   });
+  say(action.value);
 });
 
 app.action(
   "cancel_summary_click",
-  async ({ body, ack, say, payload, action, client }) => {}
+  async ({ body, ack, say, payload, action, client }) => {
+    await ack();
+    axios.post(body.response_url, {
+      delete_original: true,
+    });
+  }
 );
 
 (async () => {

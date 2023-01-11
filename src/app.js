@@ -13,8 +13,13 @@ const app = new App({
   appToken: process.env.SLACK_APP_TOKEN,
 });
 
-app.message("tldr", async ({ message, client }) => {
-  generateTldr(client, message.user, message.channel);
+app.command("/tldr", async ({ command, ack, client }) => {
+  try {
+    await ack();
+    generateTldr(client, command.user_id, command.channel_id);
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 async function generateTldr(client, userId, channelId) {

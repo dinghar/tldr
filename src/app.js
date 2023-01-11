@@ -13,9 +13,13 @@ const app = new App({
   appToken: process.env.SLACK_APP_TOKEN,
 });
 
-app.message("tldr", async ({ message, client, say }) => {
+app.message("tldr", async ({ message, client }) => {
+  generateTldr(client, message.user, message.channel);
+});
+
+async function generateTldr(client, userId, channelId) {
   const history = await client.conversations.history({
-    channel: message.channel,
+    channel: channelId,
   });
 
   const filteredMessages = filterMessages(history.messages, 1000);
@@ -76,14 +80,14 @@ app.message("tldr", async ({ message, client, say }) => {
           },
         ],
         text: "Here's the tldr...",
-        user: message.user,
-        channel: message.channel,
+        user: userId,
+        channel: channelId,
       });
     });
   });
-});
+}
 
-app.action("send_summary_click", async ({ body, action, ack, say, client }) => {
+app.action("send_summary_click", async ({ body, action, ack, say }) => {
   await ack();
   axios.post(body.response_url, {
     delete_original: true,
@@ -91,15 +95,12 @@ app.action("send_summary_click", async ({ body, action, ack, say, client }) => {
   say(action.value);
 });
 
-app.action(
-  "cancel_summary_click",
-  async ({ body, ack, say, payload, action, client }) => {
-    await ack();
-    axios.post(body.response_url, {
-      delete_original: true,
-    });
-  }
-);
+app.action("cancel_summary_click", async ({ body, ack }) => {
+  await ack();
+  axios.post(body.response_url, {
+    delete_original: true,
+  });
+});
 
 (async () => {
   // Start your app

@@ -18,6 +18,7 @@
     "axios": "^1.2.2",
     "dotenv": "^16.0.3",
     "nodemon": "^2.0.20",
-    "openai": "^3.1.0"
+    "openai": "^3.1.0",
+    "words-to-numbers": "^1.5.1"
   }
 }

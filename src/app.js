@@ -3,17 +3,22 @@ const { filterMessages, sortMessages } = require("./messageFilter");
 const { formatTranscript } = require("./transcriptFormatter");
 const { generateSummary } = require("./openaiClient");
 const { default: axios } = require("axios");
+const { parseParams } = require("./parseParams");
 require("dotenv").config();
 
 // Initializes your app with your bot token and signing secret
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
+  appToken: process.env.SLACK_APP_TOKEN,
+  socketMode: true,
 });
 
 app.command("/tldr", async ({ command, ack, client }) => {
   try {
     await ack();
+    // TODO: Handle params
+    // parseParams(command.text);
     generateTldr(client, command.user_id, command.channel_id);
   } catch (error) {
     console.error(error);

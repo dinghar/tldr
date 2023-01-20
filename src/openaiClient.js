@@ -11,7 +11,7 @@ async function generateSummary(transcript) {
 
   try {
     const completion = await openai.createCompletion({
-      model: "text-davinci-003",
+      model: process.env.OPENAI_MODEL,
       prompt: generatePrompt(transcript),
       temperature: 0.9,
       max_tokens: 250,

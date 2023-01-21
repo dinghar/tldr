@@ -17,82 +17,92 @@ const app = new App({
 app.command("/tldr", async ({ command, ack, client }) => {
   try {
     await ack();
-    // TODO: Handle params
-    // parseParams(command.text);
-    generateTldr(client, command.user_id, command.channel_id);
+    const timeframe = parseParams(command.text);
+    if (timeframe === 0) {
+      client.chat.postEphemeral(
+        "Sorry, I didn't understand that timeframe. Please use a format like '1d' or '2 hours'"
+      );
+      return;
+    }
+    generateTldr(timeframe, client, command.user_id, command.channel_id);
   } catch (error) {
     console.error(error);
   }
 });
 
-async function generateTldr(client, userId, channelId) {
-  const history = await client.conversations.history({
-    channel: channelId,
-  });
-
-  const filteredMessages = filterMessages(history.messages, 1000);
-  const sortedMessages = sortMessages(filteredMessages);
-
-  const userIds = new Set();
-  const identities = [];
-
-  for (const message of sortedMessages) {
-    userIds.add(message.user);
-  }
-
-  const promises = [];
-  for (const userId of userIds) {
-    const promise = new Promise((resolve) => {
-      client.users.profile.get({ user: userId }).then((userObj) => {
-        identities.push({ userId: userId, name: userObj.profile.real_name });
-        resolve();
-      });
+async function generateTldr(timeframe, client, userId, channelId) {
+  // TODO handletimeframe (nullable)
+  try {
+    const history = await client.conversations.history({
+      channel: channelId,
     });
-    promises.push(promise);
-  }
 
-  Promise.all(promises).then(() => {
-    const transcript = formatTranscript(sortedMessages, identities);
-    generateSummary(transcript).then((summary) => {
-      const summaryText = `Here's the tldr:\n${summary}`;
-      client.chat.postEphemeral({
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: summaryText,
+    const filteredMessages = filterMessages(history.messages, 1000);
+    const sortedMessages = sortMessages(filteredMessages);
+
+    const userIds = new Set();
+    const identities = [];
+
+    for (const message of sortedMessages) {
+      userIds.add(message.user);
+    }
+
+    const promises = [];
+    for (const userId of userIds) {
+      const promise = new Promise((resolve) => {
+        client.users.profile.get({ user: userId }).then((userObj) => {
+          identities.push({ userId: userId, name: userObj.profile.real_name });
+          resolve();
+        });
+      });
+      promises.push(promise);
+    }
+
+    Promise.all(promises).then(() => {
+      const transcript = formatTranscript(sortedMessages, identities);
+      generateSummary(transcript).then((summary) => {
+        const summaryText = `Here's the tldr:\n${summary}`;
+        client.chat.postEphemeral({
+          blocks: [
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: summaryText,
+              },
             },
-          },
-          {
-            type: "actions",
-            elements: [
-              {
-                type: "button",
-                text: {
-                  type: "plain_text",
-                  text: "Send to channel",
+            {
+              type: "actions",
+              elements: [
+                {
+                  type: "button",
+                  text: {
+                    type: "plain_text",
+                    text: "Send to channel",
+                  },
+                  value: summaryText,
+                  action_id: "send_summary_click",
                 },
-                value: summaryText,
-                action_id: "send_summary_click",
-              },
-              {
-                type: "button",
-                text: {
-                  type: "plain_text",
-                  text: "Cancel",
+                {
+                  type: "button",
+                  text: {
+                    type: "plain_text",
+                    text: "Cancel",
+                  },
+                  action_id: "cancel_summary_click",
                 },
-                action_id: "cancel_summary_click",
-              },
-            ],
-          },
-        ],
-        text: "Here's the tldr...",
-        user: userId,
-        channel: channelId,
+              ],
+            },
+          ],
+          text: "Here's the tldr...",
+          user: userId,
+          channel: channelId,
+        });
       });
     });
-  });
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 app.action("send_summary_click", async ({ body, action, ack, say }) => {

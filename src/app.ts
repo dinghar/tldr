@@ -1,10 +1,11 @@
-const { App } = require("@slack/bolt");
-const { filterMessages, sortMessages } = require("./messageFilter");
-const { formatTranscript } = require("./transcriptFormatter");
-const { generateSummary } = require("./openaiClient");
-const { default: axios } = require("axios");
-const { parseParams } = require("./parseParams");
-require("dotenv").config();
+import { App, BlockAction, ButtonAction } from "@slack/bolt";
+import { filterMessages, sortMessages } from "./messageFilter";
+import { formatTranscript } from "./transcriptFormatter";
+import { generateSummary } from "./openaiClient";
+import { default as axios } from "axios";
+import { parseParams } from "./parseParams";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Initializes your app with your bot token and signing secret
 const app = new App({
@@ -19,9 +20,12 @@ app.command("/tldr", async ({ command, ack, client }) => {
     await ack();
     const timeframe = parseParams(command.text);
     if (timeframe === 0) {
-      client.chat.postEphemeral(
-        "Sorry, I didn't understand that timeframe. Please use a format like '1d' or '2 hours'"
-      );
+      client.chat.postEphemeral({
+        // TODO double check these two values
+        channel: command.channel_id,
+        user: command.user_id,
+        text: "Sorry, I didn't understand that timeframe. Please use a format like '1d' or '2 hours'",
+      });
       return;
     }
     generateTldr(timeframe, client, command.user_id, command.channel_id);
@@ -49,7 +53,7 @@ async function generateTldr(timeframe, client, userId, channelId) {
 
     const promises = [];
     for (const userId of userIds) {
-      const promise = new Promise((resolve) => {
+      const promise = new Promise<void>((resolve) => {
         client.users.profile.get({ user: userId }).then((userObj) => {
           identities.push({ userId: userId, name: userObj.profile.real_name });
           resolve();
@@ -107,6 +111,8 @@ async function generateTldr(timeframe, client, userId, channelId) {
 
 app.action("send_summary_click", async ({ body, action, ack, say }) => {
   await ack();
+  body = body as BlockAction;
+  action = action as ButtonAction;
   axios.post(body.response_url, {
     delete_original: true,
   });
@@ -115,6 +121,7 @@ app.action("send_summary_click", async ({ body, action, ack, say }) => {
 
 app.action("cancel_summary_click", async ({ body, ack }) => {
   await ack();
+  body = body as BlockAction;
   axios.post(body.response_url, {
     delete_original: true,
   });

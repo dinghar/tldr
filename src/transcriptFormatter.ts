@@ -1,9 +1,9 @@
-function formatTranscript(messages, identities) {
+export function formatTranscript(messages, identities) {
   let transcriptString = "";
 
   for (let i = 0; i < messages.length; i++) {
-    let userId = messages[i].user;
-    let userName = identities.find(
+    const userId = messages[i].user;
+    const userName = identities.find(
       (identity) => identity.userId === userId
     ).name;
     const transcriptLine = `${userName}: ${messages[i].text}`;
@@ -12,5 +12,3 @@ function formatTranscript(messages, identities) {
 
   return transcriptString;
 }
-
-module.exports = { formatTranscript };

@@ -1,6 +1,6 @@
-const { Configuration, OpenAIApi } = require("openai");
+import { Configuration, OpenAIApi } from "openai";
 
-async function generateSummary(transcript) {
+export async function generateSummary(transcript) {
   const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
   });
@@ -25,5 +25,3 @@ async function generateSummary(transcript) {
 function generatePrompt(transcript) {
   return `In 3 - 5 sentences, summarize the following transcript: ${transcript}`;
 }
-
-module.exports = { generateSummary };

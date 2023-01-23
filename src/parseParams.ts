@@ -1,13 +1,14 @@
-const { wordsToNumbers } = require("words-to-numbers");
+/* eslint-disable no-fallthrough */
+import wordsToNumbers from "words-to-numbers";
 
-function parseParams(params) {
-  const cleanedString = stringToNum(params);
+export function parseParams(params) {
+  const cleanedString = stringToNum(params) as string;
   const cleanedNumbers = cleanedString.match(/\d+\s?\w/g);
   if (!cleanedNumbers) {
     return null;
   }
   const milliseconds = cleanedNumbers.reduce((acc, cur, i) => {
-    var multiplier = 1000;
+    let multiplier = 1000;
     switch (cur.slice(-1)) {
       case "w":
         multiplier *= 7;
@@ -37,5 +38,3 @@ function handleNonNumericInputs(text) {
 
   return cleanedString;
 }
-
-module.exports = { parseParams };

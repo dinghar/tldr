@@ -2,11 +2,12 @@
   "name": "bolt-example",
   "version": "1.0.0",
   "description": "",
-  "main": "src/app.js",
+  "main": "dist/app.js",
   "scripts": {
-    "dev": "nodemon src/app.js",
-    "start": "node src/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsc && nodemon src/app.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsc && node dist/app.ts",
+    "lint": "eslint . --ext .ts"
   },
   "author": "",
   "license": "ISC",
@@ -19,6 +20,14 @@
     "dotenv": "^16.0.3",
     "nodemon": "^2.0.20",
     "openai": "^3.1.0",
+    "ts-node": "^10.9.1",
     "words-to-numbers": "^1.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
+    "eslint": "^8.32.0",
+    "typescript": "^4.9.4"
   }
 }

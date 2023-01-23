@@ -1,10 +1,11 @@
 import { App, BlockAction, ButtonAction } from "@slack/bolt";
-import { filterMessages, sortMessages } from "./messageFilter";
+import { generateTimeConstraint, sortMessages } from "./messageFilter";
 import { formatTranscript } from "./transcriptFormatter";
 import { generateSummary } from "./openaiClient";
 import { default as axios } from "axios";
 import { parseParams } from "./parseParams";
 import dotenv from "dotenv";
+import { sendSummaryPreview } from "./responseGenerator";
 dotenv.config();
 
 // Initializes your app with your bot token and signing secret
@@ -21,7 +22,6 @@ app.command("/tldr", async ({ command, ack, client }) => {
     const timeframe = parseParams(command.text);
     if (timeframe === 0) {
       client.chat.postEphemeral({
-        // TODO double check these two values
         channel: command.channel_id,
         user: command.user_id,
         text: "Sorry, I didn't understand that timeframe. Please use a format like '1d' or '2 hours'",
@@ -35,14 +35,17 @@ app.command("/tldr", async ({ command, ack, client }) => {
 });
 
 async function generateTldr(timeframe, client, userId, channelId) {
-  // TODO handletimeframe (nullable)
   try {
+    const oldest = generateTimeConstraint(timeframe);
     const history = await client.conversations.history({
       channel: channelId,
+      oldest: oldest,
+      limit: 500,
     });
 
-    const filteredMessages = filterMessages(history.messages, 1000);
-    const sortedMessages = sortMessages(filteredMessages);
+    // TODO: Track constraints and communicate them to the user (maybe just in the ephemeral message?)
+
+    const sortedMessages = sortMessages(history.messages);
 
     const userIds = new Set();
     const identities = [];
@@ -66,42 +69,7 @@ async function generateTldr(timeframe, client, userId, channelId) {
       const transcript = formatTranscript(sortedMessages, identities);
       generateSummary(transcript).then((summary) => {
         const summaryText = `Here's the tldr:\n${summary}`;
-        client.chat.postEphemeral({
-          blocks: [
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: summaryText,
-              },
-            },
-            {
-              type: "actions",
-              elements: [
-                {
-                  type: "button",
-                  text: {
-                    type: "plain_text",
-                    text: "Send to channel",
-                  },
-                  value: summaryText,
-                  action_id: "send_summary_click",
-                },
-                {
-                  type: "button",
-                  text: {
-                    type: "plain_text",
-                    text: "Cancel",
-                  },
-                  action_id: "cancel_summary_click",
-                },
-              ],
-            },
-          ],
-          text: "Here's the tldr...",
-          user: userId,
-          channel: channelId,
-        });
+        sendSummaryPreview(client, userId, channelId, summaryText);
       });
     });
   } catch (err) {

@@ -9,6 +9,10 @@ export async function generateSummary(transcript) {
     return "Oops! There was a problem with your request. Please try again later.";
   }
 
+  if (process.env.INTERCEPT_OPENAI_API_CALLS === "true") {
+    return "This is a summary...";
+  }
+
   try {
     const completion = await openai.createCompletion({
       model: process.env.OPENAI_MODEL,

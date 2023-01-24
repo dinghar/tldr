@@ -20,7 +20,7 @@ export async function generateSummary(transcript) {
       temperature: 0.9,
       max_tokens: 250,
     });
-    return completion.data.choices[0].text;
+    return completion.data.choices[0].text.trim();
   } catch (error) {
     return `Oops! An error occurred: ${error}`;
   }

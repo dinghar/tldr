@@ -37,11 +37,26 @@ app.command("/tldr", async ({ command, ack, client }) => {
 async function generateTldr(timeframe, client, userId, channelId) {
   try {
     const oldest = generateTimeConstraint(timeframe);
+    const maxMessages = 500;
     const history = await client.conversations.history({
       channel: channelId,
       oldest: oldest,
-      limit: 500,
+      limit: maxMessages,
     });
+
+    const startDate = new Date(oldest * 1000).toLocaleDateString("en-us", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    });
+
+    const constraintString =
+      `\n\n**` +
+      `This summary was generated using up to ${maxMessages} messages since ${startDate}. ` +
+      "You can pass time constraints by saying things like `/tldr two hours` or `/tldr the last day`" +
+      `**`;
 
     // TODO: Track constraints and communicate them to the user (maybe just in the ephemeral message?)
 
@@ -68,7 +83,7 @@ async function generateTldr(timeframe, client, userId, channelId) {
     Promise.all(promises).then(() => {
       const transcript = formatTranscript(sortedMessages, identities);
       generateSummary(transcript).then((summary) => {
-        const summaryText = `Here's the tldr:\n${summary}`;
+        const summaryText = `Here's the tldr:\n${summary}` + constraintString;
         sendSummaryPreview(client, userId, channelId, summaryText);
       });
     });
@@ -84,7 +99,8 @@ app.action("send_summary_click", async ({ body, action, ack, say }) => {
   axios.post(body.response_url, {
     delete_original: true,
   });
-  say(action.value);
+  const cleanedString = action.value.replace(new RegExp(/\*\*.+\*\*/), "");
+  say(cleanedString);
 });
 
 app.action("cancel_summary_click", async ({ body, ack }) => {

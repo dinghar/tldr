@@ -1,3 +1,12 @@
+export async function fetchHistory(client, channelId, timeframe, maxMessages) {
+  const oldest = generateTimeConstraint(timeframe);
+  const history = await client.conversations.history({
+    channel: channelId,
+    oldest: oldest,
+    limit: maxMessages,
+  });
+}
+
 export function generateTimeConstraint(milliseconds) {
   const TWENTY_FOUR_HOURS_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
   const timeFilter = milliseconds

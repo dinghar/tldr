@@ -22,7 +22,7 @@ export async function fetchAISummary(transcript) {
     });
     return completion.data.choices[0].text.trim();
   } catch (error) {
-    return `Oops! An error occurred: ${error}`;
+    return `Oops! An error occurred. Please try again later.`;
   }
 }
 

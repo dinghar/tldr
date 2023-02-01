@@ -6,12 +6,20 @@ import { sendSummary } from "./slack/chat";
 import { cleanTipFromString } from "./utils/strings";
 import { processTldrRequest } from "./summaryGenerator";
 
-const app = new App({
-  token: process.env.SLACK_BOT_TOKEN,
-  signingSecret: process.env.SLACK_SIGNING_SECRET,
-  appToken: process.env.SLACK_APP_TOKEN,
-  socketMode: true,
-});
+const isSocketMode = process.env.SOCKET_MODE === "true";
+const config = isSocketMode
+  ? {
+      token: process.env.SLACK_BOT_TOKEN,
+      signingSecret: process.env.SLACK_SIGNING_SECRET,
+      appToken: process.env.SLACK_APP_TOKEN,
+      socketMode: isSocketMode,
+    }
+  : {
+      token: process.env.SLACK_BOT_TOKEN,
+      signingSecret: process.env.SLACK_SIGNING_SECRET,
+    };
+
+const app = new App(config);
 
 app.command("/tldr", async ({ command, ack, client }) => {
   try {
